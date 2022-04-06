@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'helper'
+require 'faraday/retry'
 
 # Kubernetes client entity tests
 class KubeclientTest < MiniTest::Test
@@ -293,12 +294,12 @@ class KubeclientTest < MiniTest::Test
 
   def test_custom_faraday_config_options
     client = Kubeclient::Client.new('http://localhost:8080/api/', 'v1')
-    expected_middlewares = [FaradayMiddleware::FollowRedirects, Faraday::Response::RaiseError]
+    expected_middlewares = [Faraday::FollowRedirects::Middleware, Faraday::Response::RaiseError]
     expected_middlewares.each do |klass|
       assert(client.faraday_client.builder.handlers.include?(klass))
     end
-    client.configure_faraday { |connection| connection.use(Faraday::Request::Retry) }
-    expected_middlewares << Faraday::Request::Retry
+    client.configure_faraday { |connection| connection.use(Faraday::Retry) }
+    expected_middlewares << Faraday::Retry
     expected_middlewares.each do |klass|
       assert(client.faraday_client.builder.handlers.include?(klass))
     end
