@@ -7,3 +7,5 @@ eval_gemfile(dev_gemfile) if File.exist?(dev_gemfile)
 
 # Specify your gem's dependencies in kubeclient.gemspec
 gemspec
+
+gem 'tzinfo-data'

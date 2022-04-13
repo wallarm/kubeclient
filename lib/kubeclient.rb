@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'faraday'
-require 'faraday_middleware'
+require 'faraday/follow_redirects'
 require 'json'
 require 'net/http'
 
@@ -211,7 +211,7 @@ module Kubeclient
           # So don't expect full last word to match.
           /^(?<prefix>.*[A-Z])(?<singular_suffix>[^A-Z]*)$/ =~ kind # "NetworkP", "olicy"
           if name.start_with?(prefix.downcase)
-            plural_suffix = name[prefix.length..-1] # "olicies"
+            plural_suffix = name[prefix.length..] # "olicies"
             prefix_underscores = underscore_entity(prefix) # "network_p"
             method_names = [
               prefix_underscores + singular_suffix, # "network_policy"
@@ -352,7 +352,9 @@ module Kubeclient
 
       Faraday.new(url, options) do |connection|
         if @auth_options[:username]
-          connection.request(:basic_auth, @auth_options[:username], @auth_options[:password])
+          connection.request(
+            :authorization, :basic, @auth_options[:username], @auth_options[:password]
+          )
         elsif @auth_options[:bearer_token_file]
           connection.request(:authorization, 'Bearer', lambda do
             File.read(@auth_options[:bearer_token_file]).chomp
@@ -364,7 +366,7 @@ module Kubeclient
         # hook for adding custom faraday configuration
         yield(connection) if block_given?
 
-        connection.use(FaradayMiddleware::FollowRedirects, limit: @http_max_redirects)
+        connection.use(Faraday::FollowRedirects::Middleware, limit: @http_max_redirects)
         connection.response(:raise_error)
       end
     end
